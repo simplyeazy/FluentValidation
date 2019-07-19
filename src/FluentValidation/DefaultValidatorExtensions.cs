@@ -59,7 +59,7 @@ namespace FluentValidation {
 
 		/// <summary>
 		/// Defines a 'not empty' validator on the current rule builder.
-		/// Validation will fail if the property is null, an empty or the default value for the type (for example, 0 for integers)
+		/// Validation will fail if the property is null, an empty string, whitespace, an empty collection or the default value for the type (for example, 0 for integers but null for nullable integers)
 		/// </summary>
 		/// <typeparam name="T">Type of object being validated</typeparam>
 		/// <typeparam name="TProperty">Type of property being validated</typeparam>
@@ -1103,6 +1103,22 @@ namespace FluentValidation {
 		/// <returns></returns>
 		public static IRuleBuilderOptions<T, string> IsEnumName<T>(this IRuleBuilder<T, string> ruleBuilder, Type enumType, bool caseSensitive = true) {
 			return ruleBuilder.SetValidator(new StringEnumValidator(enumType, caseSensitive));
+		}
+
+		/// <summary>
+		/// Defines child rules for a nested property.
+		/// </summary>
+		/// <param name="ruleBuilder">The rule builder.</param>
+		/// <param name="action">Callback that will be invoked to build the rules.</param>
+		/// <typeparam name="T"></typeparam>
+		/// <typeparam name="TProperty"></typeparam>
+		/// <returns></returns>
+		/// <exception cref="ArgumentNullException"></exception>
+		public static IRuleBuilderOptions<T, TProperty> ChildRules<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, Action<InlineValidator<TProperty>> action) {
+			if (action == null) throw new ArgumentNullException(nameof(action));
+			var validator = new InlineValidator<TProperty>();
+			action(validator);
+			return ruleBuilder.SetValidator(validator);
 		}
 	}
 }
