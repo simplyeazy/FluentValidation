@@ -1,20 +1,16 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace FluentValidation.Tests {
-	using Results;
+namespace FluentValidation.Tests;
 
-	public class TestValidatorWithPreValidate : AbstractValidator<Person> {
-		public TestValidatorWithPreValidate() {
-		}
+using Results;
 
-		public Func<ValidationContext<Person>, ValidationResult, bool> PreValidateMethod { get; set; }
+public class TestValidatorWithPreValidate : InlineValidator<Person> {
+	public TestValidatorWithPreValidate() {
+	}
 
-		protected override bool PreValidate(ValidationContext<Person> context, ValidationResult result) {
-			return PreValidateMethod?.Invoke(context, result) ?? base.PreValidate(context, result);
-		}
+	public Func<ValidationContext<Person>, ValidationResult, bool> PreValidateMethod { get; set; }
+
+	protected override bool PreValidate(ValidationContext<Person> context, ValidationResult result) {
+		return PreValidateMethod?.Invoke(context, result) ?? base.PreValidate(context, result);
 	}
 }

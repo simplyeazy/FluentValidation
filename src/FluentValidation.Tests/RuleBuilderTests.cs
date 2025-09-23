@@ -1,241 +1,212 @@
 #region License
-// Copyright (c) Jeremy Skinner (http://www.jeremyskinner.co.uk)
-// 
-// Licensed under the Apache License, Version 2.0 (the "License"); 
-// you may not use this file except in compliance with the License. 
-// You may obtain a copy of the License at 
-// 
-// http://www.apache.org/licenses/LICENSE-2.0 
-// 
-// Unless required by applicable law or agreed to in writing, software 
-// distributed under the License is distributed on an "AS IS" BASIS, 
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-// See the License for the specific language governing permissions and 
+// Copyright (c) .NET Foundation and contributors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
 // limitations under the License.
-// 
-// The latest version of this file can be found at https://github.com/jeremyskinner/FluentValidation
+//
+// The latest version of this file can be found at https://github.com/FluentValidation/FluentValidation
 #endregion
 
-namespace FluentValidation.Tests {
-	using System;
-	using System.Collections.Generic;
-	using System.Linq;
-	using System.Threading;
-	using System.Threading.Tasks;
-	using Internal;
-	using Moq;
-	using Xunit;
-	using Resources;
-	using Results;
-	using Validators;
-	using System.Reflection;
-	
-	public class RuleBuilderTests {
-		RuleBuilder<Person, string> builder;
+namespace FluentValidation.Tests;
 
-		public  RuleBuilderTests() {
-			var rule = PropertyRule.Create<Person,string>(x => x.Surname);
-			builder = new RuleBuilder<Person, string>(rule,null);
+using System;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Internal;
+using Xunit;
+using Validators;
+
+public class RuleBuilderTests {
+	IRuleBuilderInitial<Person, string> builder;
+	private InlineValidator<Person> _validator;
+	private IValidationRule<Person, string> _rule;
+
+
+	public  RuleBuilderTests() {
+		_validator = new InlineValidator<Person>();
+		builder = _validator.RuleFor(x => x.Surname);
+		builder.Configure(rule => _rule = rule);
+	}
+
+	[Fact]
+	public void Should_build_property_name() {
+		_rule.PropertyName.ShouldEqual("Surname");
+	}
+
+	[Fact]
+	public void Adding_a_validator_should_store_validator() {
+		var validator = new TestPropertyValidator<Person, string>();
+		builder.SetValidator(validator);
+		_rule.Current.Validator.ShouldBeTheSameAs(validator);
+	}
+
+	[Fact]
+	public void Should_set_custom_property_name() {
+		builder.SetValidator(new TestPropertyValidator<Person, string>()).WithName("Foo");
+		Assert.Equal(_rule.GetDisplayName(null), "Foo");
+	}
+
+	[Fact]
+	public void Should_set_custom_error() {
+		builder.SetValidator(new TestPropertyValidator<Person, string>()).WithMessage("Bar");
+		var component = (RuleComponent<Person, string>) _rule.Current;
+		component.GetErrorMessage(null, default).ShouldEqual("Bar");
+	}
+
+	[Fact]
+	public void Should_throw_if_validator_is_null() {
+		Assert.Throws<ArgumentNullException>(() => builder.SetValidator((PropertyValidator<Person, string>)null));
+	}
+
+	[Fact]
+	public void Should_throw_if_overriding_validator_is_null() {
+		Assert.Throws<ArgumentNullException>(() => builder.SetValidator((IValidator<string>)null));
+	}
+
+	[Fact]
+	public void Should_throw_if_overriding_validator_provider_is_null() {
+		Assert.Throws<ArgumentNullException>(() => builder.SetValidator((Func<Person, IValidator<string>>) null));
+	}
+
+	[Fact]
+	public void Should_throw_if_message_is_null() {
+		Assert.Throws<ArgumentNullException>(() => builder.SetValidator(new TestPropertyValidator<Person, string>()).WithMessage((string)null));
+	}
+
+	[Fact]
+	public void Should_throw_if_property_name_is_null() {
+		Assert.Throws<ArgumentNullException>(() => builder.SetValidator(new TestPropertyValidator<Person, string>()).WithName((string)null));
+	}
+
+	[Fact]
+	public void Should_throw_when_predicate_is_null() {
+		Assert.Throws<ArgumentNullException>(() => builder.SetValidator(new TestPropertyValidator<Person, string>()).When((Func<Person, bool>)null));
+	}
+
+	[Fact]
+	public void Should_throw_when_context_predicate_is_null() {
+		Assert.Throws<ArgumentNullException>(() => builder.SetValidator(new TestPropertyValidator<Person, string>()).When((Func<Person, ValidationContext<Person>, bool>)null));
+	}
+
+	[Fact]
+	public void Should_throw_when_async_predicate_is_null() {
+		Assert.Throws<ArgumentNullException>(() => builder.SetValidator(new TestPropertyValidator<Person, string>()).WhenAsync((Func<Person, CancellationToken, Task<bool>>) null));
+	}
+
+	[Fact]
+	public void Should_throw_when_inverse_context_predicate_is_null() {
+		Assert.Throws<ArgumentNullException>(() => builder.SetValidator(new TestPropertyValidator<Person, string>()).Unless((Func<Person, ValidationContext<Person>, bool>)null));
+	}
+
+	[Fact]
+	public void Should_throw_when_inverse_predicate_is_null() {
+		Assert.Throws<ArgumentNullException>(() => builder.SetValidator(new TestPropertyValidator<Person, string>()).Unless((Func<Person, bool>)null));
+	}
+
+	[Fact]
+	public void Should_throw_when_async_inverse_predicate_is_null() {
+		Assert.Throws<ArgumentNullException>(() => builder.SetValidator(new TestPropertyValidator<Person, string>()).UnlessAsync((Func<Person, CancellationToken, Task<bool>>) null));
+	}
+
+	[Fact]
+	public void PropertyDescription_should_return_property_name_split() {
+		var builder = _validator.RuleFor(x => x.DateOfBirth);
+		IValidationRule<Person, DateTime> rule = null;
+		builder.Configure(r => rule = r);
+		rule.GetDisplayName(null).ShouldEqual("Date Of Birth");
+	}
+
+	[Fact]
+	public void PropertyDescription_should_return_custom_property_name() {
+		var builder = _validator.RuleFor(x => x.DateOfBirth);
+		IValidationRule<Person, DateTime> rule = null;
+		builder.Configure(r => rule = r);
+		builder.NotEqual(default(DateTime)).WithName("Foo");
+		rule.GetDisplayName(null).ShouldEqual("Foo");
+	}
+
+	[Fact]
+	public void Nullable_object_with_condition_should_not_throw() {
+		_validator.RuleFor(x => x.NullableInt.Value)
+			.GreaterThanOrEqualTo(3).When(x => x.NullableInt != null);
+		_validator.Validate(new ValidationContext<Person>(new Person(), new PropertyChain(), new DefaultValidatorSelector()));
+	}
+
+	[Fact]
+	public async Task Nullable_object_with_async_condition_should_not_throw() {
+		_validator.RuleFor(x => x.NullableInt.Value)
+			.GreaterThanOrEqualTo(3)
+			.WhenAsync((x,c) => Task.FromResult(x.NullableInt != null));
+
+		await _validator.ValidateAsync(new ValidationContext<Person>(new Person(), new PropertyChain(), new DefaultValidatorSelector()));
+	}
+
+	[Fact]
+	public void Rule_for_a_non_memberexpression_should_not_generate_property_name() {
+		var builder = _validator.RuleFor(x => x.CalculateSalary());
+		IValidationRule<Person, int> rule = null;
+		builder.Configure(r => rule = r);
+		rule.GetDisplayName(null).ShouldBeNull();
+		rule.PropertyName.ShouldBeNull();
+	}
+
+	[Fact]
+	public void Property_should_return_property_being_validated() {
+		var property = typeof(Person).GetProperty("Surname");
+		_rule.Member.ShouldEqual(property);
+	}
+
+	[Fact]
+	public void Property_should_return_null_when_it_is_not_a_property_being_validated() {
+		builder = _validator.RuleFor(x => "Foo");
+		IValidationRule<Person, string> rule = null;
+		builder.Configure(r => rule = r);
+		rule.Member.ShouldBeNull();
+	}
+
+	[Fact]
+	public void Result_should_use_custom_property_name_when_no_property_name_can_be_determined() {
+		_validator.RuleFor(x => x.CalculateSalary())
+			.GreaterThan(100).WithName("Foo");
+		var context = new ValidationContext<Person>(new Person(), new PropertyChain(), new DefaultValidatorSelector());
+		var result = _validator.Validate(context);
+		result.Errors.Single().PropertyName.ShouldEqual("Foo");
+	}
+
+	[Fact]
+	public void Conditional_child_validator_should_register_with_validator_type_not_property() {
+		var builder = _validator.RuleFor(x => x.Address);
+		builder.SetValidator((Person person) => new NoopAddressValidator());
+		IValidationRule<Person, Address> rule = null;
+		builder.Configure(r => rule = r);
+
+		rule.Components
+			.Select(x => x.Validator)
+			.OfType<IChildValidatorAdaptor>().Single().ValidatorType.ShouldEqual(typeof(NoopAddressValidator));
+	}
+
+	class NoopAddressValidator : AbstractValidator<Address> {
+	}
+
+	class TestPropertyValidator<T,TProperty> : PropertyValidator<T,TProperty> {
+		public override string Name => "TestPropertyValidator";
+
+		public override bool IsValid(ValidationContext<T> context, TProperty value) {
+			return true;
 		}
 
-		[Fact]
-		public void Should_build_property_name() {
-			builder.Rule.PropertyName.ShouldEqual("Surname");
-		}
-
-		[Fact]
-		public void Should_compile_expression() {
-			var person = new Person {Surname = "Foo"};
-			builder.Rule.PropertyFunc(person).ShouldEqual("Foo");
-		}
-
-		[Fact]
-		public void Adding_a_validator_should_return_builder() {
-			var builderWithOptions = builder.SetValidator(new TestPropertyValidator());
-			builderWithOptions.ShouldBeTheSameAs(builder);
-		}
-
-		[Fact]
-		public void Adding_a_validator_should_store_validator() {
-			var validator = new TestPropertyValidator();
-			builder.SetValidator(validator);
-			builder.Rule.CurrentValidator.ShouldBeTheSameAs(validator);
-		}
-
-		[Fact]
-		public void Should_set_custom_property_name() {
-			builder.SetValidator(new TestPropertyValidator()).WithName("Foo");
-			Assert.Equal(builder.Rule.DisplayName.GetString(null), "Foo");
-		}
-
-		[Fact]
-		public void Should_set_custom_error() {
-			builder.SetValidator(new TestPropertyValidator()).WithMessage("Bar");
-			builder.Rule.CurrentValidator.Options.ErrorMessageSource.GetString(null).ShouldEqual("Bar");
-		}
-
-		[Fact]
-		public void Should_throw_if_validator_is_null() {
-			typeof(ArgumentNullException).ShouldBeThrownBy(() => builder.SetValidator((IPropertyValidator)null));
-		}
-
-		[Fact]
-		public void Should_throw_if_overriding_validator_is_null() {
-			typeof(ArgumentNullException).ShouldBeThrownBy(() => builder.SetValidator((IValidator<string>)null));
-		}
-
-		[Fact]
-		public void Should_throw_if_overriding_validator_provider_is_null() {
-			typeof (ArgumentNullException).ShouldBeThrownBy(() => builder.SetValidator((Func<Person, IValidator<string>>) null));
-		}
-
-		[Fact]
-		public void Should_throw_if_message_is_null() {
-			typeof(ArgumentNullException).ShouldBeThrownBy(() => builder.SetValidator(new TestPropertyValidator()).WithMessage((string)null));
-		}
-
-		[Fact]
-		public void Should_throw_if_property_name_is_null() {
-			typeof(ArgumentNullException).ShouldBeThrownBy(() => builder.SetValidator(new TestPropertyValidator()).WithName((string)null));
-		}
-
-		[Fact]
-		public void Should_throw_when_predicate_is_null() {
-			typeof(ArgumentNullException).ShouldBeThrownBy(() => builder.SetValidator(new TestPropertyValidator()).When(null));
-		}
-
-		[Fact]
-		public void Should_throw_when_async_predicate_is_null() {
-			typeof (ArgumentNullException).ShouldBeThrownBy(() => builder.SetValidator(new TestPropertyValidator()).WhenAsync((Func<Person, CancellationToken, Task<bool>>) null));
-		}
-
-		[Fact]
-		public void Should_throw_when_inverse_predicate_is_null() {
-			typeof(ArgumentNullException).ShouldBeThrownBy(() => builder.SetValidator(new TestPropertyValidator()).Unless(null));
-		}
-
-		[Fact]
-		public void Should_throw_when_async_inverse_predicate_is_null() {
-			typeof (ArgumentNullException).ShouldBeThrownBy(() => builder.SetValidator(new TestPropertyValidator()).UnlessAsync((Func<Person, CancellationToken, Task<bool>>) null));
-		}
-
-		[Fact]
-		public void Calling_validate_should_delegate_to_underlying_validator() {
-			var person = new Person {Surname = "Foo"};
-			var validator = new Mock<IPropertyValidator>();
-			builder.SetValidator(validator.Object);
-
-			builder.Rule.Validate(new ValidationContext<Person>(person, new PropertyChain(), new DefaultValidatorSelector())).ToList();
-
-			validator.Verify(x => x.Validate(It.Is<PropertyValidatorContext>(c => (string)c.PropertyValue == "Foo")));
-
-		}
-		[Fact]
-		public async Task Calling_ValidateAsync_should_delegate_to_underlying_sync_validator() {
-			var person = new Person { Surname = "Foo" };
-			var validator = new Mock<IPropertyValidator>();
-			builder.SetValidator(validator.Object);
-
-			await builder.Rule.ValidateAsync(new ValidationContext<Person>(person, new PropertyChain(), new DefaultValidatorSelector()), new CancellationToken());
-
-			validator.Verify(x => x.Validate(It.Is<PropertyValidatorContext>(c => (string)c.PropertyValue == "Foo")));
-
-
-		}
-		[Fact]
-		public async Task Calling_ValidateAsync_should_delegate_to_underlying_async_validator() {
-			var person = new Person { Surname = "Foo" };
-			TaskCompletionSource<IEnumerable<ValidationFailure>> tcs = new TaskCompletionSource<IEnumerable<ValidationFailure>>();
-			tcs.SetResult(Enumerable.Empty<ValidationFailure>());
-
-			var validator = new Mock<PropertyValidator>(MockBehavior.Loose, ValidatorOptions.LanguageManager.GetStringForValidator<AsyncPredicateValidator>()) {CallBase = true};
-			validator.Setup(x => x.ShouldValidateAsync(It.IsAny<ValidationContext>())).Returns(true);
-			validator.Setup(v => v.ValidateAsync(It.IsAny<PropertyValidatorContext>(), It.IsAny<CancellationToken>())).Returns(tcs.Task);
-			builder.SetValidator(validator.Object);
-
-			await builder.Rule.ValidateAsync(new ValidationContext<Person>(person, new PropertyChain(), new DefaultValidatorSelector()), new CancellationToken());
-
-			validator.Verify(x => x.ValidateAsync(It.Is<PropertyValidatorContext>(c => (string)c.PropertyValue == "Foo"), It.IsAny<CancellationToken>()));
-
-		}
-       
-
-		[Fact]
-		public void PropertyDescription_should_return_property_name_split() {
-			var builder = new RuleBuilder<Person, DateTime>(PropertyRule.Create<Person, DateTime>(x => x.DateOfBirth), null);
-			builder.Rule.GetDisplayName().ShouldEqual("Date Of Birth");
-		}
-
-		[Fact]
-		public void PropertyDescription_should_return_custom_property_name() {
-			var builder = new RuleBuilder<Person, DateTime>(PropertyRule.Create<Person, DateTime>(x => x.DateOfBirth),null);
-			builder.NotEqual(default(DateTime)).WithName("Foo");
-			builder.Rule.GetDisplayName().ShouldEqual("Foo");
-		}
-
-		[Fact]
-		public void Nullable_object_with_condition_should_not_throw()
-		{
-			var builder = new RuleBuilder<Person, int>(PropertyRule.Create<Person, int>(x => x.NullableInt.Value),null);
-			builder.GreaterThanOrEqualTo(3).When(x => x.NullableInt != null);
-			builder.Rule.Validate(new ValidationContext<Person>(new Person(), new PropertyChain(), new DefaultValidatorSelector()));
-		}
-
-		[Fact]
-		public void Nullable_object_with_async_condition_should_not_throw()
-		{
-			var builder = new RuleBuilder<Person, int>(PropertyRule.Create<Person, int>(x => x.NullableInt.Value),null);
-			builder.GreaterThanOrEqualTo(3).WhenAsync(async (x,c) => x.NullableInt != null);
-			builder.Rule.Validate(new ValidationContext<Person>(new Person(), new PropertyChain(), new DefaultValidatorSelector()));
-		}
-
-		[Fact]
-		public void Rule_for_a_non_memberexpression_should_not_generate_property_name() {
-			var builder = new RuleBuilder<Person, int>(PropertyRule.Create<Person, int>(x => x.CalculateSalary()),null);
-			builder.Rule.GetDisplayName().ShouldBeNull();
-			builder.Rule.PropertyName.ShouldBeNull();
-		}
-
-		[Fact]
-		public void Property_should_return_property_being_validated() {
-			var property = typeof(Person).GetProperty("Surname");
-			builder.Rule.Member.ShouldEqual(property);
-		}
-
-		[Fact]
-		public void Property_should_return_null_when_it_is_not_a_property_being_validated() {
-			builder = new RuleBuilder<Person, string>(PropertyRule.Create<Person, string>(x => "Foo"),null);
-			builder.Rule.Member.ShouldBeNull();
-		}
-
-		[Fact]
-		public void Result_should_use_custom_property_name_when_no_property_name_can_be_determined() {
-			var builder = new RuleBuilder<Person, int>(PropertyRule.Create<Person, int>(x => x.CalculateSalary()),null);
-			builder.GreaterThan(100).WithName("Foo");
-
-			var results = builder.Rule.Validate(new ValidationContext<Person>(new Person(), new PropertyChain(), new DefaultValidatorSelector()));
-			results.Single().PropertyName.ShouldEqual("Foo");
-		}
-
-		[Fact]
-		public void Conditional_child_validator_should_register_with_validator_type_not_property() {
-			var builder = new RuleBuilder<Person, Address>(PropertyRule.Create<Person, Address>(x => x.Address),null);
-			builder.SetValidator((Person person) => new NoopAddressValidator());
-
-			builder.Rule.Validators.OfType<ChildValidatorAdaptor>().Single().ValidatorType.ShouldEqual(typeof(NoopAddressValidator));
-		}
-
-		class NoopAddressValidator : AbstractValidator<Address> {
-		}
-
-		class TestPropertyValidator : PropertyValidator {
-			public TestPropertyValidator() : base(new LanguageStringSource(nameof(NotNullValidator))) {
-				
-			}
-
-			protected override bool IsValid(PropertyValidatorContext context) {
-				return true;
-			}
+		protected override string GetDefaultMessageTemplate(string errorCode) {
+			return Localized(errorCode, "NotNullValidator");
 		}
 	}
 }

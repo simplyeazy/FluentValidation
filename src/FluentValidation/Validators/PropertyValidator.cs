@@ -1,5 +1,5 @@
 #region License
-// Copyright (c) Jeremy Skinner (http://www.jeremyskinner.co.uk)
+// Copyright (c) .NET Foundation and contributors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,112 +13,46 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// The latest version of this file can be found at https://github.com/jeremyskinner/FluentValidation
+// The latest version of this file can be found at https://github.com/FluentValidation/FluentValidation
 #endregion
 
-using System.Threading;
+namespace FluentValidation.Validators;
 
-namespace FluentValidation.Validators {
-	using System;
-	using System.Collections.Generic;
-	using System.Linq;
-	using System.Linq.Expressions;
-	using System.Threading.Tasks;
-	using FluentValidation.Internal;
-	using Resources;
-	using Results;
+using Internal;
 
-	public abstract class PropertyValidator : IPropertyValidator {
-		public PropertyValidatorOptions Options { get; } = new PropertyValidatorOptions();
+public abstract class PropertyValidator<T, TProperty> : IPropertyValidator<T,TProperty> {
 
-		protected PropertyValidator(IStringSource errorMessageSource) {
-			if(errorMessageSource == null) errorMessageSource = new StaticStringSource("No default error message has been specified.");
-			else if (errorMessageSource is LanguageStringSource l && l.ErrorCodeFunc == null)
-				l.ErrorCodeFunc = ctx => Options.ErrorCodeSource?.GetString(ctx);
+	string IPropertyValidator.GetDefaultMessageTemplate(string errorCode)
+		=> GetDefaultMessageTemplate(errorCode);
 
-			Options.ErrorMessageSource = errorMessageSource;
-		}
+	/// <summary>
+	/// Returns the default error message template for this validator, when not overridden.
+	/// </summary>
+	/// <param name="errorCode">The currently configured error code for the validator.</param>
+	/// <returns></returns>
+	protected virtual string GetDefaultMessageTemplate(string errorCode) => "No default error message has been specified";
 
-		[Obsolete("This constructor will be removed in FluentValidation 9.0. Use the overload that takes an IStringSource instead, passing in a LazyStringSource: PropertyValidator(new LazyStringSource(ctx => MyResourceClass.MyResourceName))")]
-		protected PropertyValidator(string errorMessageResourceName, Type errorMessageResourceType) {
-			errorMessageResourceName.Guard("errorMessageResourceName must be specified.", nameof(errorMessageResourceName));
-			errorMessageResourceType.Guard("errorMessageResourceType must be specified.", nameof(errorMessageResourceType));
+	/// <inheritdoc />
+	public abstract string Name { get; }
 
-			Options.ErrorMessageSource = new LocalizedStringSource(errorMessageResourceType, errorMessageResourceName);
-		}
-
-		protected PropertyValidator(string errorMessage) {
-			Options.ErrorMessageSource = new StaticStringSource(errorMessage);
-		}
-
-		public virtual IEnumerable<ValidationFailure> Validate(PropertyValidatorContext context) {
-			if (Options.Condition != null && !Options.Condition(context)) return Enumerable.Empty<ValidationFailure>();
-			if (IsValid(context)) return Enumerable.Empty<ValidationFailure>();
-
-			PrepareMessageFormatterForValidationError(context);
-			return new[] { CreateValidationError(context) };
-
-		}
-
-		public virtual async Task<IEnumerable<ValidationFailure>> ValidateAsync(PropertyValidatorContext context, CancellationToken cancellation) {
-			if (Options.Condition != null && !Options.Condition(context)) return Enumerable.Empty<ValidationFailure>();
-			if (Options.AsyncCondition != null && !await Options.AsyncCondition(context, cancellation)) return Enumerable.Empty<ValidationFailure>();
-			if (await IsValidAsync(context, cancellation)) return Enumerable.Empty<ValidationFailure>();
-
-			PrepareMessageFormatterForValidationError(context);
-			return new[] {CreateValidationError(context)};
-		}
-
-		public virtual bool ShouldValidateAsync(ValidationContext context) {
-			// If the user has applied an async condition, then always go through the async path
-			// even if validator is being run synchronously.
-			if (Options.AsyncCondition != null) return true;
-			return false;
-		}
-
-		protected abstract bool IsValid(PropertyValidatorContext context);
-
-#pragma warning disable 1998
-		protected virtual async Task<bool> IsValidAsync(PropertyValidatorContext context, CancellationToken cancellation) {
-			return IsValid(context);
-		}
-#pragma warning restore 1998
-
-		/// <summary>
-		/// Prepares the <see cref="MessageFormatter"/> of <paramref name="context"/> for an upcoming <see cref="ValidationFailure"/>.
-		/// </summary>
-		/// <param name="context">The validator context</param>
-		protected virtual void PrepareMessageFormatterForValidationError(PropertyValidatorContext context) {
-			context.MessageFormatter.AppendPropertyName(context.DisplayName);
-			context.MessageFormatter.AppendPropertyValue(context.PropertyValue);
-		}
-
-		/// <summary>
-		/// Creates an error validation result for this validator.
-		/// </summary>
-		/// <param name="context">The validator context</param>
-		/// <returns>Returns an error validation result.</returns>
-		protected virtual ValidationFailure CreateValidationError(PropertyValidatorContext context) {
-			var messageBuilderContext = new MessageBuilderContext(context, Options.ErrorMessageSource, this);
-
-			var error = context.Rule.MessageBuilder != null
-				? context.Rule.MessageBuilder(messageBuilderContext)
-				: messageBuilderContext.GetDefaultMessage();
-
-			var failure = new ValidationFailure(context.PropertyName, error, context.PropertyValue);
-			failure.FormattedMessageArguments = context.MessageFormatter.AdditionalArguments;
-			failure.FormattedMessagePlaceholderValues = context.MessageFormatter.PlaceholderValues;
-			failure.ResourceName = Options.ErrorMessageSource.ResourceName;
-			failure.ErrorCode = (Options.ErrorCodeSource != null)
-				? Options.ErrorCodeSource.GetString(context)
-				: ValidatorOptions.ErrorCodeResolver(this);
-
-			if (Options.CustomStateProvider != null) {
-				failure.CustomState = Options.CustomStateProvider(context);
-			}
-
-			failure.Severity = Options.Severity;
-			return failure;
-		}
+	/// <summary>
+	/// Retrieves a localized string from the LanguageManager.
+	/// If an ErrorCode is defined for this validator, the error code is used as the key.
+	/// If no ErrorCode is defined (or the language manager doesn't have a translation for the error code)
+	/// then the fallback key is used instead.
+	/// </summary>
+	/// <param name="errorCode">The currently configured error code for the validator.</param>
+	/// <param name="fallbackKey">The fallback key to use for translation, if no ErrorCode is available.</param>
+	/// <returns>The translated error message template.</returns>
+	protected string Localized(string errorCode, string fallbackKey) {
+		return ValidatorOptions.Global.LanguageManager.ResolveErrorMessageUsingErrorCode(errorCode, fallbackKey);
 	}
+
+	/// <summary>
+	/// Validates a specific property value.
+	/// </summary>
+	/// <param name="context">The validation context. The parent object can be obtained from here.</param>
+	/// <param name="value">The current property value to validate</param>
+	/// <returns>True if valid, otherwise false.</returns>
+	public abstract bool IsValid(ValidationContext<T> context, TProperty value);
 }

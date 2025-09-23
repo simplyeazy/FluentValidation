@@ -1,21 +1,22 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <TargetFrameworks>netstandard2.0</TargetFrameworks>
-        <AssemblyName>FluentValidation.DependencyInjectionExtensions</AssemblyName>
-        <PackageId>FluentValidation.DependencyInjectionExtensions</PackageId>
-        <Product>FluentValidation.DependencyInjectionExtensions</Product>
-        <Description>Dependenecy injection extensions for FluentValidation</Description>
+        <TargetFramework>net8.0</TargetFramework>
+        <RootNamespace>FluentValidation</RootNamespace>
+        <Description>Dependency injection extensions for FluentValidation</Description>
         <PackageReleaseNotes>
-            Full release notes can be found at https://github.com/JeremySkinner/FluentValidation/blob/master/Changelog.txt
+            Full release notes can be found at https://github.com/FluentValidation/FluentValidation/releases
         </PackageReleaseNotes>
-        <!-- Signing is only performed as part of the release build -->
-        <SignAssembly Condition="'$(AssemblyOriginatorKeyFile)'!=''">True</SignAssembly>
-        <DelaySign>False</DelaySign>
-        <DocumentationFile Condition="'$(Configuration)'=='Release'">bin\$(Configuration)\$(TargetFramework)\FluentValidation.DependencyInjectionExtensions.xml</DocumentationFile>
-        <DebugType>embedded</DebugType>
+        <GenerateDocumentationFile Condition="'$(Configuration)'=='Release'">true</GenerateDocumentationFile>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <EnablePackageValidation>true</EnablePackageValidation>
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <EmbedUntrackedSources>true</EmbedUntrackedSources>
+        <ContinuousIntegrationBuild Condition="'$(Configuration)'=='Release'">true</ContinuousIntegrationBuild>
+        <EnablePackageValidation>true</EnablePackageValidation>
     </PropertyGroup>
     <ItemGroup>
         <Compile Include="..\CommonAssemblyInfo.cs" Link="CommonAssemblyInfo.cs" />
+        <None Include="README.md" Pack="true" PackagePath="\" />
     </ItemGroup>
     <ItemGroup>
         <PackageReference Include="Microsoft.Extensions.Dependencyinjection.Abstractions" Version="2.1.0" />

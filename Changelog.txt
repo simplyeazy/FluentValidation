@@ -1,4 +1,325 @@
-8.5.0 - 
+12.0.0 - 5 May 2025
+Drops support for netstandard2.0, netstandard2.1, .net 5, .net 6 and .net 7. Minimum supported platform is now .net 6.
+Add support for dependent rules for custom rules (#2170)
+Removes deprecated DI extensions
+Removes deprecated transform methods (#2027)
+Remove the ability to disable the root-model null check (#2069)
+Use Zomp.SyncMethodGenerator to clean up internal sync/async code paths (#2136)
+Add Serbian (Cyrillic) language; rename existing Serbian to Serbian (Latin) (#2283)
+
+11.11.0 - 16 Nov 2024
+Add additional overload of WithState that takes a context (#2276)
+
+11.10.0 - 15 Sep 2024
+Add WhereAsync as conterpart to Where on collection rules (#2240)
+Create IEnumValidator to expose the targeted Enum type of EnumValidator (#2244)
+Add Romansh language translations (#2239)
+
+11.9.2 - 10 Jun 2024
+ScalePrecisionValidator error message clarification (#2211)
+
+11.9.1 - 23 Apr 2024
+Fix issue with CascadeMode on child validators (#2207)
+
+11.9.0 - 21 Dec 2023
+Fix memory leak in NotEmptyValidator/EmptyValidator (#2174)
+Add more descriptive error messages if a rule throws a NullReferenceException (#2152)
+Add support for caching root parameter expressions (eg RuleFor(x => x)) (#2168)
+Add builds for .net 8
+Prevent AddValidatorsFromAssemblyContaining from registering validators twice (#2182)
+
+11.8.1 - 22 Nov 2023
+Fix unintentional behavioural changes in introduced in the previous release as part of #2158
+
+11.8.0 - 19 Oct 2023
+Added AbstractValidator.OnRuleAdded to allow customization of rule instances after creation (#2114)
+Fix Serbian translation of LengthValidator (#2147)
+Fix chinese culture codes (#2151)
+Add Khmer translations (#2155)
+Various performance improvements (#2158)
+Fix ChildRules with class hierarchies (#2165)
+
+11.7.1 - 12 Aug 2023
+Resolved issue with combining multiple ValidationResult instances where RuleSetsExecuted wasn't properly set on the combined result (#2125)
+
+11.7.0 - 11 Aug 2023
+Add additional constructor for combining multiple ValidationResult instances (#2125)
+Add PropertyPath placeholder (#2134)
+Fix Brazilian Portuguese translation (#2131)
+
+11.6.0 - 4 Jul 2023
+Add OnFailurecCreated callback in ValidatorOptions.Global (#2120)
+Fix typo in Russian localization (#2102)
+Add Tajik language (#2108)
+Fixed some typos in Validator Extension docblocks (#2118)
+
+11.5.2 - 7 Apr 2023
+Resolve issue with ruleset propogation for multiple levels of child rules (#2097)
+
+11.5.1 - 20 Feb 2023
+Deprecated the ability to disable the root model null check via overriding AbstractValidator.EnsureInstanceNotNull (#2069)
+Deprecated the Transform and TransformAsync methods (#2072)
+
+11.5.0 - 13 Feb 2023
+MemberNameValidatorSelector now supports wildcard indexes in property paths (#2056)
+Added overload of TestValidateAsync that accepts a context (#2052)
+Minor optimization to regex validator (#2035)
+Added Kazakh translations (#2036)
+Added Catalan translations and updated Spanish translations (#2050)
+Updates to Uzbek Latin and Cyrillic translations (#2040/#2041/#2045)
+Updates to Italian translations (#2039)
+Updates to French translations (#2065)
+
+11.4.0 - 23 Nov 2022
+Deprecate ScalePrecision validator and introduce PrecisionScale validator as its replacement (#2030)
+
+11.3.0 - 10 Nov 2022
+Annotate string parameters with StringSyntaxAttribute.Regex in net7 builds (#1957)
+Fixes to SourceLink integration (#2019)
+Add Uzbek Latin and Cyrillic languages (#2013)
+Updates to Danish language (#2012)
+
+11.2.2 - 11 September 2022
+MemberNameValidatorSelector should make use of PropertyNameResolver when parsing expressions (#2003)
+
+11.2.1 - 28 August 2022
+Fix test helper .Only() not taking into account parent-level unmatched failures (#1986)
+
+11.2.0 - 8 August 2022
+Resolve issue with unexpected results when with nested Include calls with the MemberNameValidatorSelector (#1989)
+Add a new Selector Factory for the Composite Selector (#1988)
+
+11.1.1 - 6 August 2022
+Fix issue with incorrect rulesets being executed in a child validator when combined with ChildRules (#1981)
+Bulgarian translations of default messages (#1973)
+
+11.1.0 - 22 June 2022
+Added a ToDictionary method to ValidationResult
+MVC auto validation: Deprecated Implicit validation of child properties (#1960)
+MVC auto validation: Deprecated Implicit validation of root collection elements (#1960)
+Deprecated InjectValidator (#1960)
+Deprecate validator factories (#1961)
+Introduce services.AddFluentValidationAutoValidation() and services.AddFluentValidationClientsideAdapters() as replacements for services.AddFluentValidation() (#1965)
+Remove duplication between sync and async validation in the internal model.
+
+11.0.3 - 10 June 2022
+Fix an issue where an exception would be thrown when calling ValidateAsync if a rule was wrapped with a call to WhenAsync. (#1955)
+
+11.0.2 - 27 May 2022
+Child validator contexts should contain a reference to their parent context (#1945)
+Support deserialization of ValidationResult using System.Text.Json (#1928)
+
+11.0.1 - 7 May 2022
+Fix regression in the Test Helper affecting the With* and Without* assertion methods (#1937)
+
+11.0.0 - 30 Apr 2022
+Ensure property covariance is properly handled throughout the internal model (#1713)
+Throw exceptions when async validator is invoked synchronously (#1705)
+Removal deprecated OnFailure/OnAnyFailure callbacks.
+Remove deprecated RunDefaultMvcValidationAfterFluentValidationExecutes option from ASP.NET integration.
+Remove deprecated Options property from RuleComponent.
+Remove deprecated TestHelper methods.
+Remove PropertyValidator backwards compatibility layer.
+Add method Only() asserting that no other validation errors were raised.
+
+10.4.0 - 11 Mar 2022
+Allow use of "*" with RuleSetForClientSideMessagesAttribute and HttpContext.SetRulesetForClientsideMessages (#1912)
+Fix Azerbaijani language code (#1874)
+
+10.3.6 - 13 Dec 2021
+Fix Azerbaijani language code (#1865)
+Setting DisableAutomaticValidation to true should prevent implicit validation running (#1868)
+Enable package validation (#1860)
+
+10.3.5 - 30 Nov 2021
+Fixed ThrowOnFailures not being passed through if context creation requires type conversion (#1863).
+
+10.3.4 - 22 Oct 2021
+Clientside messages shouldn't be generated for the lazy version of LessThanOrEqual/GreaterThanOrEqual (#1818)
+Remove enumerable boxing in Empty/NotEmpty validators (#1823)
+
+10.3.3 - 24 Aug 2021
+Remove reference type constraint for TestValidate (#1815)
+
+10.3.1 - 19 Aug 2021
+Fix scale precision error message when digits is calculated as negative (#1790)
+Shared conditions shouldn't rely on object hashcode for unique ID (#1810)
+
+10.3.0 - 9 July 2021
+Update Russian translations (#1761)
+Add Thai translations (#1768)
+Add Azerbaijani translations (#1770)
+Deprecate the old test helper methods in favour of TestValidate.
+Deprecate OnFailure and OnAnyFailure callbacks.
+
+10.2.3 - 3 Jun 2021
+Resolve issue with rulesets not cascading correctly to Inheritance Validators (#1754)
+
+10.2.2 - 1 Jun 2021
+Add backwards compatibility overloads for validator registration methods.
+
+10.2.1 - 30 May 2021
+Optional internal type registration should work with MVC registration (#1748)
+
+10.2.0 - 28 May 2021
+Display name generation should be consistent between RuleForEach and RuleFor.ForEach (#1231)
+Allow AddFluentValidation to be called directly on IServiceCollection (#1726)
+Throw exception on ValidateAndThrow even if PreValidate prevents further Validation (#1736)
+ValidationException now includes rule severity (#1733)
+Optionally support internal types when scanning assemblies for validators (#1742)
+Deprecate RunDefaultMvcValidationAfterFluentValidationExecutes in MVC configuration. Use DisableDataAnnotationsValidation instead.
+
+10.1.0 - 28 April 2021
+Allow default severity level to be set globally (#1715)
+Extend use of variance into the internal API to resolve invalid cast exceptions in some scenarios (#1711)
+Fix clientside metadata being incorrectly generated for cross-property LessThanOrEqual/GreaterThanOrEqual (#1721)
+
+10.0.4 - 17 April 2021
+Fix a bug where async conditions were sometimes run synchronously.
+
+10.0.3 - 15 April 2021
+Fix ArgumentOutOfRangeException when condition returns false for RuleForEach containing multiple components (#1698)
+
+10.0.2 - 9 April 2021
+Expose ErrorCode property on IRuleComponent.
+
+10.0.1 - 8 April 2021
+Add GetPropertyValue method to IValidationRule<T>
+Fix context parameter types on IValidationRule.ApplyCondition and ApplyAsyncCondition.
+
+10.0.0 - 6 April 2021
+Please review the upgrade guide for 10.0: https://docs.fluentvalidation.net/en/latest/upgrading-to-10.html
+Performance improvements.
+Collection rules now only iterate the collection once.
+Property validators are now generic.
+Internal API now uses generics.
+Deprecated non-generic PropertyValidator.
+Various property validator options have been seperated into RuleComponents.
+Various parts of the internal API are now internal (PropertyRule, CollectionPropertyRule etc).
+ValidatorDescriptor now returns rule components in various places.
+Changed type of ValidationResult.Errors from IList<ValidationFailure> to List<ValidationFailure>
+Default service lifetime is now Scoped rather than Transient.
+Combine IActionContextValidatorInterceptor and IValidatorInterceptor.
+Changes to the ASP.NET Client Validator Adaptor interfaces. These now receive the rule component.
+Removed deprecated IStringSource and its inheritors.
+Removed deprecated FormattedMessageArguments from ValidationFailure.
+Removed other deprecated code.
+
+9.5.4 - 5 April 2021
+Fix Serbian translation of error messages (#1683)
+Add Vietnamese translations of error messages (#1677)
+
+9.5.3 - 15 March 2021
+Fix Swedish translation for CreditCardValidator (#1664)
+
+9.5.2 - 8 March 2021
+Fix Dutch translation of some errors (#1653)
+Fix string equality comparison in WithCustomState extension (#1658)
+
+9.5.1 - 11 February 2021
+Fix incorrect wording in deprecation message for Transform (#1613)
+Fix ScalePrecision validator being available in intellisense for non-decimal properties.
+Expose additional overload of Transform that receives the root object in the transformer.
+
+9.5.0 - 31 January 2021
+Introduce new syntax for applying transformations and deprecate the old syntax (#1613)
+
+9.4.0 - 14 January 2021
+ChildRules now work as expected when inside a ruleset (#1597)
+Added ImplicitlyValidateRootCollectionElements option to MVC integration (#1585)
+
+9.3.0 - 10 November 2020
+Support for .NET 5
+Improvements to LanguageManager's lazy loading of resources.
+Deprecate IStringSource and its implementors. Use delegates instead.
+CustomizeValidatorAttribute now works in Razor pages (netcore 3.1 and net 5.0 only) (#1541)
+RuleSetForClientSideMessagesAttribute now works in Razor pages (netcore 3.1 and net 5.0 only) (#1544)
+Fixes to Spanish translations.
+
+9.2.2 - 20 September 2020
+Fix one of the inheritance validator overloads not working correctly (#1528)
+
+9.2.1 - 19 September 2020
+Add non-generic Add method to inheritance validator.
+Updates to Persian translations (#1513)
+Added Bengali translations (#1517)
+
+9.2.0 - 26 August 2020
+Add inheritance validator (#1237)
+Performance improvements.
+
+9.1.3 - 19 August 2020
+Fix an issue with IncludeRulesNotInRuleSet not working correctly (#1493)
+
+9.1.2 - 12 August 2020
+Make the ValidationContext.ThrowOnFailures getter public.
+
+9.1.1 - 8 August 2020
+Update StopOnFirstFailure deprecation message.
+
+9.1 - 8 August 2020
+Make ruleset separator character splitting consistent (#1424)
+Transform now works with RuleForEach (#1450)
+Introduce constants for rulesets (#1435)
+Resolve issue when attempting to use asynchronous conditions in a synchornous validaiton run (#1438)
+Added asynchronous versions of the TestHelper methods (#1423)
+Introduce CascadeMode.Stop and deprecate CascadeMode.StopOnFirstFailure to resolve confusion/abiguity about setting the cascade mode at validator-level (#1437)
+RaiseValidationException can be overridden to customize the exception throwing process (#1162)
+Add new Validate extension methods that allow options to be configured using a strategy (#1467)
+
+9.0.1 - 14 July 2020
+Fix assembly version was still 8.
+
+9.0 - 6 July 2020
+Removed support for netstandard1.1, netstandard1.6 and net45 (net461 still supported)
+Removed support for unsupported .NET Core versions (2.2 and 3.0). LTS versions are supported (2.1 and 3.1)
+Default email validation mode now uses the same logic as ASP.NET Core. Previous regex behaviour is opt-in.
+TestHelper advanced mode now has more features (see https://docs.fluentvalidation.net/en/latest/testing.html#advanced-test-extensions)
+Equal/NotEqual now perform ordinal comparison when used with string properties
+Severity can now be set dynamically with a callback
+Removed WithLocalizedMessage (WithMessage that takes a callback is the replacement)
+Removed ResourceName from ValidationFailure
+Removed ResourceName and ResourceType from IStringSource.
+Removed SetCollectionValidator which was deprecated in 8.0
+Removed DelegatingValidator which was deprecated in 8.x.
+Additional overload of OnAnyFailure that can receive a collection of validation failures
+Remove DisplayAttribute integration and reference to DataAnnotations.
+ComparisonProperty placeholder is now formatted like PropertyName
+Translations of default error messages into other languages are now lazily-loaded
+PropertyValidator.ShouldValidateAsync reanamed to ShouldValidateAsynchronously to remove confusion where the naming suggested this was an async method
+PropertyValidatorContext.Instance renamed to InstanceToValidate for consistency with ValidationContext.
+Removed various methods from MessageFormatter that were deprecated in 8.x
+Added Slovenian translations of default error messages.
+Added Icelandic translations of default error messages.
+Added WithMessageArgument to the test helpers.
+Transform can now be used to transform property values to other types.
+FluentValidationModelValidatorProvider and FluentValidationModelValidator are now public.
+Add additional overload of SetValidator that takes a Func that receives the current property value.
+Work around a bug in ASP.NET Core's integration testing components that can cause ConfigureServices to run multiple times.
+SourceLink integration.
+{CollectionIndex} placeholder can now be accessed in child validators.
+Additional ValidationException constructor that allows using both the default message and a custom one together.
+ScalePrecisionValidator algorithm now matches SQL Server.
+Additional overload of the When methods that contain the validation context.
+Automatically scanned types can be excluded when calling RegisterValidatorsFromAssemblyContaining in ASP.NET Core projects.
+New AutomaticValidationEnabled property for use in ASP.NET Core projects (defaults to true).
+
+8.6.2 - 29 February 2020
+Fix CollectionIndex placeholder not working with async workflow.
+
+8.6.1 - 28 December 2019
+Add explicit netcoreapp3.1 target to ASP.NET Core integration.
+
+8.6.0 - 4 December 2019
+Add support for ASP.NET Core 3.1
+Fixed issue with property indexers being incorrectly stripped out when using test extensions.
+AddToModelState no longer includes a dot if PropertyName is null
+
+8.5.1 - 2 November 2019
+Ensure lazily loaded calls to WithMessage can be used for client-side validation, provided they don't attempt to access model properties from inside the delegate (eg when using IStringLocalizer).
+Fix issue where OnFailure didn't work properly when invoked on validators with conditions.
+
+8.5.0 - 24 September 2019
 Add ASP.NET Core-compatible version of the email address validator.
 Simplify the advanced testhelper syntax.
 Add support for ASP.NET Core 3.
@@ -6,6 +327,10 @@ Add support for defining child rules inline.
 ValidatorDescriptor now has consistent handling of model-level rules.
 RuleForEach can now access collection index in error message with {CollectionIndex} placeholder.
 Welsh language translations of default error messages.
+Hungrian language translations of default error messages.
+Indonesian language translations of default error messages.
+Using RuleForEach combined with When is now more intuitive.
+Fixed order of rule execution when using async validation.
 
 8.4.0 - 10 May 2019
 Added simplified version of several messages across all translations to aid with ASP.NET Clientside validation.
@@ -22,10 +347,10 @@ Improvements to Georgian language translations.
 Resolved subtle bug where top-level WhenAsync wouldn't work correctly when wrapping a top-level call to When.
 
 8.2.3 - 12 April 2019
-Fix issue with WebApi integration where DataAnnotations validation could generate duplicate messages when used in the same 
+Fix issue with WebApi integration where DataAnnotations validation could generate duplicate messages when used in the same
 project as FluentValidation.
 
-8.2.2 - 5 April 2019 
+8.2.2 - 5 April 2019
 Fix typo in FluentValidation.DependencyInjectionExtensions package name.
 
 8.2.1 - 4 April 2019
@@ -83,11 +408,11 @@ Remove the pre-7 version of Custom/CustomAsync.
 Removed deprecated localization system.
 Remove deprecated RemoveRule/ReplaceRule/ClearRules methods.
 
-7.6.105 - 11 August 2018 
-Added Albanian language translations 
-Added Chinese Traditional language translation 
+7.6.105 - 11 August 2018
+Added Albanian language translations
+Added Chinese Traditional language translation
 Fix #858 ValidationTestExtension.When() incorrectly checks each failure instead of all failures
- 
+
 7.6.104 - 6 July 2018
 Added AbstractValidator.PreValidate to allow immediate cancellation of validation.
 

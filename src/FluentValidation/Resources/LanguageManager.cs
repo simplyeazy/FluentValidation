@@ -1,5 +1,6 @@
 ﻿#region License
-// Copyright (c) Jeremy Skinner (http://www.jeremyskinner.co.uk)
+
+// Copyright (c) .NET Foundation and contributors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,140 +14,153 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// The latest version of this file can be found at https://github.com/JeremySkinner/FluentValidation
+// The latest version of this file can be found at https://github.com/FluentValidation/FluentValidation
+
 #endregion
-namespace FluentValidation.Resources {
-	using System;
-	using System.Collections.Generic;
-	using System.Globalization;
-	using Validators;
+
+namespace FluentValidation.Resources;
+
+using System;
+using System.Collections.Concurrent;
+using System.Globalization;
+
+/// <summary>
+/// Allows the default error message translations to be managed.
+/// </summary>
+public class LanguageManager : ILanguageManager {
+	private readonly ConcurrentDictionary<string, string> _languages = new ConcurrentDictionary<string, string>();
 
 	/// <summary>
-	/// Allows the default error message translations to be managed.
+	/// Language factory.
 	/// </summary>
-	public class LanguageManager : ILanguageManager {
-		private readonly Dictionary<string, Language> _languages = new Dictionary<string, Language>();
-		private Language _fallback;
+	/// <param name="culture">The culture code.</param>
+	/// <param name="key">The key to load</param>
+	/// <returns>The corresponding Language instance or null.</returns>
+	private static string GetTranslation(string culture, string key) {
+		return culture switch {
+			EnglishLanguage.AmericanCulture => EnglishLanguage.GetTranslation(key),
+			EnglishLanguage.BritishCulture => EnglishLanguage.GetTranslation(key),
+			EnglishLanguage.Culture => EnglishLanguage.GetTranslation(key),
+			AlbanianLanguage.Culture => AlbanianLanguage.GetTranslation(key),
+			ArabicLanguage.Culture => ArabicLanguage.GetTranslation(key),
+			AzerbaijaneseLanguage.Culture => AzerbaijaneseLanguage.GetTranslation(key),
+			BengaliLanguage.Culture => BengaliLanguage.GetTranslation(key),
+			BosnianLanguage.Culture => BosnianLanguage.GetTranslation(key),
+			BulgarianLanguage.Culture => BulgarianLanguage.GetTranslation(key),
+			ChineseSimplifiedLanguage.Culture => ChineseSimplifiedLanguage.GetTranslation(key),
+			ChineseTraditionalLanguage.Culture => ChineseTraditionalLanguage.GetTranslation(key),
+			CroatianLanguage.Culture => CroatianLanguage.GetTranslation(key),
+			CzechLanguage.Culture => CzechLanguage.GetTranslation(key),
+			DanishLanguage.Culture => DanishLanguage.GetTranslation(key),
+			DutchLanguage.Culture => DutchLanguage.GetTranslation(key),
+			FinnishLanguage.Culture => FinnishLanguage.GetTranslation(key),
+			EstonianLanguage.Culture => EstonianLanguage.GetTranslation(key),
+			FrenchLanguage.Culture => FrenchLanguage.GetTranslation(key),
+			GermanLanguage.Culture => GermanLanguage.GetTranslation(key),
+			GeorgianLanguage.Culture => GeorgianLanguage.GetTranslation(key),
+			GreekLanguage.Culture => GreekLanguage.GetTranslation(key),
+			HebrewLanguage.Culture => HebrewLanguage.GetTranslation(key),
+			HindiLanguage.Culture => HindiLanguage.GetTranslation(key),
+			HungarianLanguage.Culture => HungarianLanguage.GetTranslation(key),
+			IcelandicLanguage.Culture => IcelandicLanguage.GetTranslation(key),
+			ItalianLanguage.Culture => ItalianLanguage.GetTranslation(key),
+			IndonesianLanguage.Culture => IndonesianLanguage.GetTranslation(key),
+			JapaneseLanguage.Culture => JapaneseLanguage.GetTranslation(key),
+			KazakhLanguage.Culture => KazakhLanguage.GetTranslation(key),
+			KhmerLanguage.Culture => KhmerLanguage.GetTranslation(key),
+			KoreanLanguage.Culture => KoreanLanguage.GetTranslation(key),
+			LatvianLanguage.Culture => LatvianLanguage.GetTranslation(key),
+			MacedonianLanguage.Culture => MacedonianLanguage.GetTranslation(key),
+			NorwegianBokmalLanguage.Culture => NorwegianBokmalLanguage.GetTranslation(key),
+			NorwegianNynorskLanguage.Culture => NorwegianNynorskLanguage.GetTranslation(key),
+			PersianLanguage.Culture => PersianLanguage.GetTranslation(key),
+			PolishLanguage.Culture => PolishLanguage.GetTranslation(key),
+			PortugueseLanguage.Culture => PortugueseLanguage.GetTranslation(key),
+			PortugueseBrazilLanguage.Culture => PortugueseBrazilLanguage.GetTranslation(key),
+			RomanianLanguage.Culture => RomanianLanguage.GetTranslation(key),
+			RomanshLanguage.Culture => RomanshLanguage.GetTranslation(key),
+			RussianLanguage.Culture => RussianLanguage.GetTranslation(key),
+			SlovakLanguage.Culture => SlovakLanguage.GetTranslation(key),
+			SlovenianLanguage.Culture => SlovenianLanguage.GetTranslation(key),
+			SpanishLanguage.Culture => SpanishLanguage.GetTranslation(key),
+			SerbianCyrillicLanguage.Culture => SerbianCyrillicLanguage.GetTranslation(key),
+			SerbianLatinLanguage.Culture => SerbianLatinLanguage.GetTranslation(key),
+			SwedishLanguage.Culture => SwedishLanguage.GetTranslation(key),
+			ThaiLanguage.Culture => ThaiLanguage.GetTranslation(key),
+			TurkishLanguage.Culture => TurkishLanguage.GetTranslation(key),
+			UkrainianLanguage.Culture => UkrainianLanguage.GetTranslation(key),
+			VietnameseLanguage.Culture => VietnameseLanguage.GetTranslation(key),
+			WelshLanguage.Culture => WelshLanguage.GetTranslation(key),
+			UzbekLatinLanguage.Culture => UzbekLatinLanguage.GetTranslation(key),
+			UzbekCyrillicLanguage.Culture => UzbekCyrillicLanguage.GetTranslation(key),
+			CatalanLanguage.Culture => CatalanLanguage.GetTranslation(key),
+			TajikLanguage.Culture => TajikLanguage.GetTranslation(key),
+			TamilLanguage.Culture => TamilLanguage.GetTranslation(key),
+			TeluguLanguage.Culture => TeluguLanguage.GetTranslation(key),
+			_ => null,
+		};
+	}
 
-		/// <summary>
-		/// Creates a new instance of the LanguageManager class.
-		/// </summary>
-		public LanguageManager() {
-			var languages = new Language[] {
-				new EnglishLanguage(),
-				new ChineseSimplifiedLanguage(),
-				new ChineseTraditionalLanguage(),
-				new CroatianLanguage(),
-				new CzechLanguage(),
-				new DanishLanguage(),
-				new DutchLanguage(),
-				new FinnishLanguage(),
-				new FrenchLanguage(),
-				new GermanLanguage(),
-				new GeorgianLanguage(),
-				new HebrewLanguage(),
-				new HindiLanguage(),
-				new IndonesianLanguage(),
-				new ItalianLanguage(),
-				new KoreanLanguage(),
-				new MacedonianLanguage(),
-				new PersianLanguage(),
-				new PolishLanguage(),
-				new PortugueseLanguage(),
-				new PortugueseBrazilLanguage(),
-				new RomanianLanguage(),
-				new RussianLanguage(),
-				new SlovakLanguage(),
-				new SpanishLanguage(),
-				new SwedishLanguage(),
-				new TurkishLanguage(),
-				new UkrainianLanguage(),
-				new ArabicLanguage(),
-				new AlbanianLanguage(),
-				new GreekLanguage(),
-				new NorwegianBokmalLanguage(),
-				new JapaneseLanguage(),
-				new WelshLanguage()
-			};
+	/// <summary>
+	/// Whether localization is enabled.
+	/// </summary>
+	public bool Enabled { get; set; } = true;
 
-			foreach (var language in languages) {
-				_languages[language.Name] = language;
-			}
+	/// <summary>
+	/// Default culture to use for all requests to the LanguageManager. If not specified, uses the current UI culture.
+	/// </summary>
+	public CultureInfo Culture { get; set; }
 
-			_fallback = _languages["en"];
-		}
+	/// <summary>
+	/// Removes all languages except the default.
+	/// </summary>
+	public void Clear() {
+		_languages.Clear();
+	}
 
-		/// <summary>
-		/// Whether localization is enabled.
-		/// </summary>
-		public bool Enabled { get; set; } = true;
+	/// <summary>
+	/// Gets a translated string based on its key. If the culture is specific and it isn't registered, we try the neutral culture instead.
+	/// If no matching culture is found  to be registered we use English.
+	/// </summary>
+	/// <param name="key">The key</param>
+	/// <param name="culture">The culture to translate into</param>
+	/// <returns></returns>
+	public virtual string GetString(string key, CultureInfo culture = null) {
+		string value;
 
-		/// <summary>
-		/// Default culture to use for all requests to the LanguageManager. If not specified, uses the current UI culture.
-		/// </summary>
-		public CultureInfo Culture { get; set; }
-
-		/// <summary>
-		/// Provides a collection of all supported languages.
-		/// </summary>
-		/// <returns></returns>
-		[Obsolete("LanguageManager.GetSupportedLanguages() will be removed in FluentValidation 9.0 as it assumes that all languages are pre-loaded.")]
-		public IEnumerable<string> GetSupportedLanguages() {
-			return _languages.Keys;
-		}
-
-		/// <summary>
-		/// Removes all languages except the default.
-		/// </summary>
-		public void Clear() {
-			_languages.Clear();
-		}
-
-		/// <summary>
-		/// Gets a translated string based on its key. If the culture is specific and it isn't registered, we try the neutral culture instead.
-		/// If no matching culture is found  to be registered we use English.
-		/// </summary>
-		/// <param name="key">The key</param>
-		/// <param name="culture">The culture to translate into</param>
-		/// <returns></returns>
-		public virtual string GetString(string key, CultureInfo culture=null) {
+		if (Enabled) {
 			culture = culture ?? Culture ?? CultureInfo.CurrentUICulture;
 
-			string code = culture.Name;
+			string currentCultureKey = culture.Name + ":" + key;
+			value = _languages.GetOrAdd(currentCultureKey, k => GetTranslation(culture.Name, key));
 
-			if (!culture.IsNeutralCulture && !_languages.ContainsKey(code)) {
-				code = culture.Parent.Name;
+			// If the value couldn't be found, try the parent culture.
+			var currentCulture = culture;
+			while (value == null && currentCulture.Parent != CultureInfo.InvariantCulture) {
+				currentCulture = currentCulture.Parent;
+				string parentCultureKey = currentCulture.Name + ":" + key;
+				value = _languages.GetOrAdd(parentCultureKey, k => GetTranslation(currentCulture.Name, key));
 			}
 
-			var languageToUse = Enabled && _languages.ContainsKey(code)
-				? _languages[code]
-				: _fallback;
-
-			string value = languageToUse.GetTranslation(key);
-
-			if (string.IsNullOrEmpty(value) && languageToUse != _fallback) {
-				value = _fallback.GetTranslation(key);
+			if (value == null && culture.Name != EnglishLanguage.Culture) {
+				// If it couldn't be found, try the fallback English (if we haven't tried it already).
+				if (!culture.IsNeutralCulture && culture.Parent.Name != EnglishLanguage.Culture) {
+					value = _languages.GetOrAdd(EnglishLanguage.Culture + ":" + key, k => EnglishLanguage.GetTranslation(key));
+				}
 			}
-
-			return value ?? string.Empty;
+		}
+		else {
+			value = _languages.GetOrAdd(EnglishLanguage.Culture + ":" + key, k => EnglishLanguage.GetTranslation(key));
 		}
 
-		[Obsolete("LanguageManager.GetSupportedTranslationKeys() can return inconsistent information depending on the current culture. This method will be removed in 9.0.")]
-		public IEnumerable<string> GetSupportedTranslationKeys() {
-			return _fallback.GetSupportedKeys();
-		}
+		return value ?? string.Empty;
+	}
 
-		public void AddTranslation(string language, string key, string message) {
-			if(string.IsNullOrEmpty(language)) throw new ArgumentNullException(nameof(language));
-			if (string.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
-			if (string.IsNullOrEmpty(message)) throw new ArgumentNullException(nameof(message));
+	public void AddTranslation(string language, string key, string message) {
+		if (string.IsNullOrEmpty(language)) throw new ArgumentNullException(nameof(language));
+		if (string.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
+		if (string.IsNullOrEmpty(message)) throw new ArgumentNullException(nameof(message));
 
-			if (!_languages.ContainsKey(language)) {
-				_languages[language] = new GenericLanguage(language);
-			}
-
-			_languages[language].Translate(key, message);
-
-		}
+		_languages[language + ":" + key] = message;
 	}
 }

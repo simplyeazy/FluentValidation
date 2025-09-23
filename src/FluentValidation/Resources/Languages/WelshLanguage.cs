@@ -1,5 +1,6 @@
 #region License
-// Copyright (c) Jeremy Skinner (http://www.jeremyskinner.co.uk)
+
+// Copyright (c) .NET Foundation and contributors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,46 +14,47 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// The latest version of this file can be found at https://github.com/JeremySkinner/FluentValidation
+// The latest version of this file can be found at https://github.com/FluentValidation/FluentValidation
+
 #endregion
 
-namespace FluentValidation.Resources {
-  using Validators;
+#pragma warning disable 618
 
-  internal class WelshLanguage : Language {
-	  public const string Culture = "cy";
-    public override string Name => Culture;
+namespace FluentValidation.Resources;
 
-    public WelshLanguage() {
-      Translate<EmailValidator>("Nid yw '{PropertyName}' yn gyfeiriad e-bost dilys.");
-      Translate<GreaterThanOrEqualValidator>("Rhaid i '{PropertyName}' fod yn fwy na '{ComparisonValue}', neu'n gyfartal ag o.");
-      Translate<GreaterThanValidator>("Rhaid i '{PropertyName}' fod yn fwy na '{ComparisonValue}'.");
-      Translate<LengthValidator>("Rhaid i '{PropertyName}' fod rhwng {MinLength} a {MaxLength} o nodau. Rydych wedi rhoi {TotalLength} nod.");
-      Translate<MinimumLengthValidator>("Rhaid i '{PropertyName}' fod o leiaf {MinLength} nod o hyd. Rydych wedi rhoi {TotalLength} nod.");
-      Translate<MaximumLengthValidator>("Rhaid i '{PropertyName}' fod yn {MaxLength} nod o hyd neu lai. Rydych wedi rhoi {TotalLength} nod.");
-      Translate<LessThanOrEqualValidator>("Rhaid i '{PropertyName}' fod yn llai na '{ComparisonValue}', neu'n gyfartal ag o.");
-      Translate<LessThanValidator>("Rhaid i '{PropertyName}' fod yn llai na '{ComparisonValue}'.");
-      Translate<NotEmptyValidator>("Ni ddylai '{PropertyName}' fod yn wag.");
-      Translate<NotEqualValidator>("Ni ddylai '{PropertyName}' fod yn gyfartal â '{ComparisonValue}'.");
-      Translate<NotNullValidator>("Ni ddylai '{PropertyName}' fod yn wag.");
-      Translate<PredicateValidator>("Ni chyflawnwyd y gofyniad penodol ar gyfer '{PropertyName}'.");
-      Translate<AsyncPredicateValidator>("Ni chyflawnwyd y gofyniad penodol ar gyfer '{PropertyName}'.");
-      Translate<RegularExpressionValidator>("Nid yw '{PropertyName}' yn y fformat cywir.");
-      Translate<EqualValidator>("Mae'n rhaid i '{PropertyName}' fod yn gyfartal â '{ComparisonValue}'.");
-      Translate<ExactLengthValidator>("Mae'n rhaid i '{PropertyName}' fod yn {MaxLength} nod o hyd. Rydych wedi rhoi {TotalLength} nod.");
-      Translate<InclusiveBetweenValidator>("Rhaid i '{PropertyName}' fod rhwng {From} a {To}. Rydych wedi rhoi {Value}.");
-      Translate<ExclusiveBetweenValidator>("Rhaid i '{PropertyName}' fod rhwng {From} a {To} (ddim yn gynwysedig). Rydych wedi rhoi {Value}.");
-      Translate<CreditCardValidator>("Nid yw '{PropertyName}' yn rhif cerdyn credyd dilys.");
-      Translate<ScalePrecisionValidator>("Ni ddylai '{PropertyName}' fod yn fwy na {ExpectedPrecision} digid i gyd  gan ganiatáu ar gyfer {ExpectedScale} degolyn. Canfuwyd {Digits} digid a {ActualScale} degolyn.");
-      Translate<EmptyValidator>("Rhaid i '{PropertyName}' fod yn wag.");
-      Translate<NullValidator>("Rhaid i '{PropertyName}' fod yn wag.");
-      Translate<EnumValidator>("Mae gan '{PropertyName}' ystod o werthoedd nad ydynt yn cynnwys '{PropertyValue}'.");
-      // Additional fallback messages used by clientside validation integration.
-      Translate("Length_Simple", "Rhaid i '{PropertyName}' fod rhwng {MinLength} a {MaxLength} o nodau.");
-      Translate("MinimumLength_Simple", "Rhaid i '{PropertyName}' fod o leiaf {MinLength} nod o hyd.");
-      Translate("MaximumLength_Simple", "Rhaid i '{PropertyName}' fod yn {MaxLength} nod o hyd neu lai.");
-      Translate("ExactLength_Simple", "Mae'n rhaid i '{PropertyName}' fod yn {MaxLength} nod o hyd.");
-      Translate("InclusiveBetween_Simple", "Rhaid i '{PropertyName}' fod rhwng {From} a {To}.");
-    }
-  }
+internal class WelshLanguage {
+	public const string Culture = "cy";
+
+	public static string GetTranslation(string key) => key switch {
+		"EmailValidator" => "Nid yw '{PropertyName}' yn gyfeiriad e-bost dilys.",
+		"GreaterThanOrEqualValidator" => "Rhaid i '{PropertyName}' fod yn fwy na '{ComparisonValue}', neu'n gyfartal ag o.",
+		"GreaterThanValidator" => "Rhaid i '{PropertyName}' fod yn fwy na '{ComparisonValue}'.",
+		"LengthValidator" => "Rhaid i '{PropertyName}' fod rhwng {MinLength} a {MaxLength} o nodau. Rydych wedi rhoi {TotalLength} nod.",
+		"MinimumLengthValidator" => "Rhaid i '{PropertyName}' fod o leiaf {MinLength} nod o hyd. Rydych wedi rhoi {TotalLength} nod.",
+		"MaximumLengthValidator" => "Rhaid i '{PropertyName}' fod yn {MaxLength} nod o hyd neu lai. Rydych wedi rhoi {TotalLength} nod.",
+		"LessThanOrEqualValidator" => "Rhaid i '{PropertyName}' fod yn llai na '{ComparisonValue}', neu'n gyfartal ag o.",
+		"LessThanValidator" => "Rhaid i '{PropertyName}' fod yn llai na '{ComparisonValue}'.",
+		"NotEmptyValidator" => "Ni ddylai '{PropertyName}' fod yn wag.",
+		"NotEqualValidator" => "Ni ddylai '{PropertyName}' fod yn gyfartal â '{ComparisonValue}'.",
+		"NotNullValidator" => "Ni ddylai '{PropertyName}' fod yn wag.",
+		"PredicateValidator" => "Ni chyflawnwyd y gofyniad penodol ar gyfer '{PropertyName}'.",
+		"AsyncPredicateValidator" => "Ni chyflawnwyd y gofyniad penodol ar gyfer '{PropertyName}'.",
+		"RegularExpressionValidator" => "Nid yw '{PropertyName}' yn y fformat cywir.",
+		"EqualValidator" => "Mae'n rhaid i '{PropertyName}' fod yn gyfartal â '{ComparisonValue}'.",
+		"ExactLengthValidator" => "Mae'n rhaid i '{PropertyName}' fod yn {MaxLength} nod o hyd. Rydych wedi rhoi {TotalLength} nod.",
+		"InclusiveBetweenValidator" => "Rhaid i '{PropertyName}' fod rhwng {From} a {To}. Rydych wedi rhoi {PropertyValue}.",
+		"ExclusiveBetweenValidator" => "Rhaid i '{PropertyName}' fod rhwng {From} a {To} (ddim yn gynwysedig). Rydych wedi rhoi {PropertyValue}.",
+		"CreditCardValidator" => "Nid yw '{PropertyName}' yn rhif cerdyn credyd dilys.",
+		"ScalePrecisionValidator" => "Ni ddylai '{PropertyName}' fod yn fwy na {ExpectedPrecision} digid i gyd  gan ganiatáu ar gyfer {ExpectedScale} degolyn. Canfuwyd {Digits} digid a {ActualScale} degolyn.",
+		"EmptyValidator" => "Rhaid i '{PropertyName}' fod yn wag.",
+		"NullValidator" => "Rhaid i '{PropertyName}' fod yn wag.",
+		"EnumValidator" => "Mae gan '{PropertyName}' ystod o werthoedd nad ydynt yn cynnwys '{PropertyValue}'.",
+		// Additional fallback messages used by clientside validation integration.
+		"Length_Simple" => "Rhaid i '{PropertyName}' fod rhwng {MinLength} a {MaxLength} o nodau.",
+		"MinimumLength_Simple" => "Rhaid i '{PropertyName}' fod o leiaf {MinLength} nod o hyd.",
+		"MaximumLength_Simple" => "Rhaid i '{PropertyName}' fod yn {MaxLength} nod o hyd neu lai.",
+		"ExactLength_Simple" => "Mae'n rhaid i '{PropertyName}' fod yn {MaxLength} nod o hyd.",
+		"InclusiveBetween_Simple" => "Rhaid i '{PropertyName}' fod rhwng {From} a {To}.",
+		_ => null,
+	};
 }

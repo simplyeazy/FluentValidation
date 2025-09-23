@@ -1,103 +1,126 @@
-namespace FluentValidation.Validators {
-	using System;
-	using System.Collections.Generic;
-	using System.Linq;
-	using System.Threading;
-	using System.Threading.Tasks;
-	using Internal;
-	using Results;
+namespace FluentValidation.Validators;
 
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+using Internal;
+
+/// <summary>
+/// Indicates that this validator wraps another validator.
+/// </summary>
+public interface IChildValidatorAdaptor {
 	/// <summary>
-	/// Indicates that this validator wraps another validator.
+	/// The type of the underlying validator
 	/// </summary>
-	public interface IChildValidatorAdaptor {
-		/// <summary>
-		/// The type of the underlying validator
-		/// </summary>
-		Type ValidatorType { get; }
+	Type ValidatorType { get; }
+}
+
+public class ChildValidatorAdaptor<T,TProperty> : NoopPropertyValidator<T,TProperty>, IAsyncPropertyValidator<T, TProperty>, IChildValidatorAdaptor {
+	private readonly Func<ValidationContext<T>, TProperty, IValidator<TProperty>> _validatorProvider;
+	private readonly IValidator<TProperty> _validator;
+
+	public override string Name => "ChildValidatorAdaptor";
+
+	public Type ValidatorType { get; }
+
+	public string[] RuleSets { get; set; }
+
+	public ChildValidatorAdaptor(IValidator<TProperty> validator, Type validatorType) {
+		_validator = validator;
+		ValidatorType = validatorType;
 	}
 
-	public class ChildValidatorAdaptor : NoopPropertyValidator, IChildValidatorAdaptor {
-		private readonly Func<IValidationContext, IValidator> _validatorProvider;
-		private readonly IValidator _validator;
+	public ChildValidatorAdaptor(Func<ValidationContext<T>, TProperty, IValidator<TProperty>> validatorProvider, Type validatorType) {
+		_validatorProvider = validatorProvider;
+		ValidatorType = validatorType;
+	}
 
-		public Type ValidatorType { get; }
-
-		public string[] RuleSets { get; set; }
-
-		internal bool PassThroughParentContext { get; set; }
-
-		public ChildValidatorAdaptor(IValidator validator, Type validatorType) {
-			_validator = validator;
-			ValidatorType = validatorType;
+	public override bool IsValid(ValidationContext<T> context, TProperty value) {
+		if (value == null) {
+			return true;
 		}
 
-		public ChildValidatorAdaptor(Func<IValidationContext, IValidator> validatorProvider, Type validatorType) {
-			_validatorProvider = validatorProvider;
-			ValidatorType = validatorType;
+		var validator = GetValidator(context, value);
+
+		if (validator == null) {
+			return true;
 		}
 
-		public override IEnumerable<ValidationFailure> Validate(PropertyValidatorContext context) {
-			if (Options.Condition != null && !Options.Condition(context)) {
-				return Enumerable.Empty<ValidationFailure>();
-			} 
+		var newContext = CreateNewValidationContextForChildValidator(context, value);
 
-			if (context.PropertyValue == null) {
-				return Enumerable.Empty<ValidationFailure>();
+		// If we're inside a collection with RuleForEach, then preserve the CollectionIndex placeholder
+		// and pass it down to child validator by caching it in the RootContextData which flows through to
+		// the child validator. PropertyValidator.PrepareMessageFormatterForValidationError handles extracting this.
+		HandleCollectionIndex(context, out object originalIndex, out object currentIndex);
+
+		validator.Validate(newContext);
+
+		// Reset the collection index
+		ResetCollectionIndex(context, originalIndex, currentIndex);
+		return true;
+	}
+
+	public virtual async Task<bool> IsValidAsync(ValidationContext<T> context, TProperty value, CancellationToken cancellation) {
+		if (value == null) {
+			return true;
+		}
+
+		var validator = GetValidator(context, value);
+
+		if (validator == null) {
+			return true;
+		}
+
+		var newContext = CreateNewValidationContextForChildValidator(context, value);
+
+		// If we're inside a collection with RuleForEach, then preserve the CollectionIndex placeholder
+		// and pass it down to child validator by caching it in the RootContextData which flows through to
+		// the child validator. PropertyValidator.PrepareMessageFormatterForValidationError handles extracting this.
+		HandleCollectionIndex(context, out object originalIndex, out object currentIndex);
+
+		await validator.ValidateAsync(newContext, cancellation);
+
+		ResetCollectionIndex(context, originalIndex, currentIndex);
+
+		return true;
+	}
+
+	public virtual IValidator GetValidator(ValidationContext<T> context, TProperty value) {
+		ArgumentNullException.ThrowIfNull(context);
+		return _validatorProvider != null ? _validatorProvider(context, value) : _validator;
+	}
+
+	protected virtual IValidationContext CreateNewValidationContextForChildValidator(ValidationContext<T> context, TProperty value) {
+		var selector = GetSelector(context, value);
+		var newContext = context.CloneForChildValidator(value, true, selector);
+
+		if(!context.IsChildCollectionContext)
+			newContext.PropertyChain.Add(context.RawPropertyName);
+
+		return newContext;
+	}
+
+	private protected virtual IValidatorSelector GetSelector(ValidationContext<T> context, TProperty value) {
+		return RuleSets?.Length > 0 ? new RulesetValidatorSelector(RuleSets) : null;
+	}
+
+	private void HandleCollectionIndex(ValidationContext<T> context, out object originalIndex, out object index) {
+		originalIndex = null;
+		if (context.MessageFormatter.PlaceholderValues.TryGetValue("CollectionIndex", out index)) {
+			context.RootContextData.TryGetValue("__FV_CollectionIndex", out originalIndex);
+			context.RootContextData["__FV_CollectionIndex"] = index;
+		}
+	}
+
+	private void ResetCollectionIndex(ValidationContext<T> context, object originalIndex, object index) {
+		// Reset the collection index
+		if (index != null) {
+			if (originalIndex != null) {
+				context.RootContextData["__FV_CollectionIndex"] = originalIndex;
 			}
-
-			var validator = GetValidator(context);
-
-			if (validator == null) {
-				return Enumerable.Empty<ValidationFailure>();
+			else {
+				context.RootContextData.Remove("__FV_CollectionIndex");
 			}
-
-			var newContext = CreateNewValidationContextForChildValidator(context.PropertyValue, context);
-			return validator.Validate(newContext).Errors;
-		}
-
-		public override async Task<IEnumerable<ValidationFailure>> ValidateAsync(PropertyValidatorContext context, CancellationToken cancellation) {
-			if (Options.Condition != null && !Options.Condition(context)) {
-				return Enumerable.Empty<ValidationFailure>();
-			} 
-			
-			if (Options.AsyncCondition != null && !await Options.AsyncCondition(context, cancellation)) {
-				return Enumerable.Empty<ValidationFailure>();
-			}
-			
-			if (context.PropertyValue == null) {
-				return Enumerable.Empty<ValidationFailure>();
-			}
-
-			var validator = GetValidator(context);
-
-			if (validator == null) {
-				return Enumerable.Empty<ValidationFailure>();
-			}
-
-			var newContext = CreateNewValidationContextForChildValidator(context.PropertyValue, context);
-			var result = await validator.ValidateAsync(newContext, cancellation);
-			return result.Errors;
-		}
-
-		public virtual IValidator GetValidator(PropertyValidatorContext context) {
-			context.Guard("Cannot pass a null context to GetValidator", nameof(context));
-
-			return _validatorProvider != null ? _validatorProvider(context) : _validator;
-		}
-
-		protected ValidationContext CreateNewValidationContextForChildValidator(object instanceToValidate, PropertyValidatorContext context) {
-			var selector = RuleSets?.Length > 0 ? new RulesetValidatorSelector(RuleSets) : null;
-			var newContext = context.ParentContext.CloneForChildValidator(instanceToValidate, PassThroughParentContext, selector);
-
-			if(!context.ParentContext.IsChildCollectionContext)
-				newContext.PropertyChain.Add(context.Rule.PropertyName);
-
-			return newContext;
-		}
-
-		public override bool ShouldValidateAsync(ValidationContext context) {
-			return context.IsAsync() || Options.AsyncCondition != null;
 		}
 	}
 }

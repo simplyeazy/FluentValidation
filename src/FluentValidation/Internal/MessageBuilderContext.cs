@@ -1,44 +1,50 @@
-﻿namespace FluentValidation.Internal {
-	using Resources;
-	using Validators;
+﻿namespace FluentValidation.Internal;
 
-	public class MessageBuilderContext : IValidationContext {
-		private PropertyValidatorContext _innerContext;
+using Validators;
 
-		public MessageBuilderContext(PropertyValidatorContext innerContext, IStringSource errorSource, IPropertyValidator propertyValidator) {
-			_innerContext = innerContext;
-			ErrorSource = errorSource;
-			PropertyValidator = propertyValidator;
-		}
+public interface IMessageBuilderContext<T, out TProperty> {
+	IRuleComponent<T, TProperty> Component { get; }
+	IPropertyValidator PropertyValidator { get; }
+	ValidationContext<T> ParentContext { get; }
+	string PropertyName { get; }
+	string DisplayName { get; }
+	MessageFormatter MessageFormatter { get; }
+	T InstanceToValidate { get; }
+	TProperty PropertyValue { get; }
+	string GetDefaultMessage();
+}
 
-		public IPropertyValidator PropertyValidator { get; }
+public class MessageBuilderContext<T,TProperty> : IMessageBuilderContext<T,TProperty> {
+	private ValidationContext<T> _innerContext;
+	private TProperty _value;
 
-		public IStringSource ErrorSource { get; }
+	public MessageBuilderContext(ValidationContext<T> innerContext, TProperty value, RuleComponent<T,TProperty> component) {
+		_innerContext = innerContext;
+		_value = value;
+		Component = component;
+	}
 
-		public ValidationContext ParentContext => _innerContext.ParentContext;
+	public RuleComponent<T,TProperty> Component { get; }
 
-		public PropertyRule Rule => _innerContext.Rule;
+	IRuleComponent<T, TProperty> IMessageBuilderContext<T, TProperty>.Component => Component;
 
-		public string PropertyName => _innerContext.PropertyName;
+	public IPropertyValidator PropertyValidator
+		=> Component.Validator;
 
-		public string DisplayName => _innerContext.DisplayName;
+	public ValidationContext<T> ParentContext => _innerContext;
 
-		public object Instance => _innerContext.Instance;
+	// public IValidationRule<T> Rule => _innerContext.Rule;
 
-		public MessageFormatter MessageFormatter => _innerContext.MessageFormatter;
+	public string PropertyName => _innerContext.PropertyPath;
 
-		public object InstanceToValidate => _innerContext.Instance;
-		public object PropertyValue => _innerContext.PropertyValue;
-		
-		IValidationContext IValidationContext.ParentContext => ParentContext;
+	public string DisplayName => _innerContext.DisplayName;
 
-		public string GetDefaultMessage() {
-			return MessageFormatter.BuildMessage(ErrorSource.GetString(_innerContext));
-		}
+	public MessageFormatter MessageFormatter => _innerContext.MessageFormatter;
 
-		public static implicit operator PropertyValidatorContext(MessageBuilderContext ctx) {
-			return ctx._innerContext;
-		}
+	public T InstanceToValidate => _innerContext.InstanceToValidate;
+	public TProperty PropertyValue => _value;
 
+	public string GetDefaultMessage() {
+		return Component.GetErrorMessage(_innerContext, _value);
 	}
 }

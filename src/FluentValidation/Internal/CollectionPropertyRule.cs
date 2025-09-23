@@ -1,6 +1,6 @@
 ﻿#region License
 
-// Copyright (c) Jeremy Skinner (http://www.jeremyskinner.co.uk)
+// Copyright (c) .NET Foundation and contributors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,174 +14,233 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// The latest version of this file can be found at https://github.com/JeremySkinner/FluentValidation
+// The latest version of this file can be found at https://github.com/FluentValidation/FluentValidation
 
 #endregion
 
-namespace FluentValidation.Internal {
-	using System;
-	using System.Collections.Generic;
-	using System.Linq;
-	using System.Linq.Expressions;
-	using System.Reflection;
-	using System.Threading;
-	using System.Threading.Tasks;
-	using Results;
-	using Validators;
+namespace FluentValidation.Internal;
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
+
+/// <summary>
+/// Rule definition for collection properties
+/// </summary>
+/// <typeparam name="TElement"></typeparam>
+/// <typeparam name="T"></typeparam>
+internal partial class CollectionPropertyRule<T, TElement> : RuleBase<T, IEnumerable<TElement>, TElement>, ICollectionRule<T, TElement>, IValidationRuleInternal<T, TElement> {
+	/// <summary>
+	/// Initializes new instance of the CollectionPropertyRule class
+	/// </summary>
+	public CollectionPropertyRule(MemberInfo member, Func<T, IEnumerable<TElement>> propertyFunc, LambdaExpression expression, Func<CascadeMode> cascadeModeThunk, Type typeToValidate)
+		: base(member, propertyFunc, expression, cascadeModeThunk, typeToValidate) {
+	}
 
 	/// <summary>
-	/// Rule definition for collection properties
+	/// Filter that should include/exclude items in the collection.
 	/// </summary>
-	/// <typeparam name="TProperty"></typeparam>
-	public class CollectionPropertyRule<TProperty> : PropertyRule {
-		/// <summary>
-		/// Initializes new instance of the CollectionPropertyRule class
-		/// </summary>
-		/// <param name="member"></param>
-		/// <param name="propertyFunc"></param>
-		/// <param name="expression"></param>
-		/// <param name="cascadeModeThunk"></param>
-		/// <param name="typeToValidate"></param>
-		/// <param name="containerType"></param>
-		public CollectionPropertyRule(MemberInfo member, Func<object, object> propertyFunc, LambdaExpression expression, Func<CascadeMode> cascadeModeThunk, Type typeToValidate, Type containerType) : base(member, propertyFunc, expression, cascadeModeThunk, typeToValidate, containerType) {
+	public Func<TElement, bool> Filter { get; set; }
+
+	/// <summary>
+	/// Asynchronous filter that should be used to include/exclude items in the collection.
+	/// </summary>
+	public Func<TElement, Task<bool>> AsyncFilter { get; set; }
+
+	/// <summary>
+	/// Constructs the indexer in the property name associated with the error message.
+	/// By default this is "[" + index + "]"
+	/// </summary>
+	public Func<T, IEnumerable<TElement>, TElement, int, string> IndexBuilder { get; set; }
+
+	/// <summary>
+	/// Creates a new property rule from a lambda expression.
+	/// </summary>
+	public static CollectionPropertyRule<T, TElement> Create(Expression<Func<T, IEnumerable<TElement>>> expression, Func<CascadeMode> cascadeModeThunk, bool bypassCache = false) {
+		var member = expression.GetMember();
+		var compiled = AccessorCache<T>.GetCachedAccessor(member, expression, bypassCache, "FV_RuleForEach");
+		return new CollectionPropertyRule<T, TElement>(member, x => compiled(x), expression, cascadeModeThunk, typeof(TElement));
+	}
+
+
+	[Zomp.SyncMethodGenerator.CreateSyncVersion(OmitNullableDirective = true)]
+	async ValueTask IValidationRuleInternal<T>.ValidateAsync(ValidationContext<T> context, CancellationToken cancellation) {
+		string displayName = GetDisplayName(context);
+
+		if (PropertyName == null && displayName == null) {
+			//No name has been specified. Assume this is a model-level rule, so we should use empty string instead.
+			displayName = string.Empty;
 		}
 
-		/// <summary>
-		/// Filter that should include/exclude items in the collection.
-		/// </summary>
-		public Func<TProperty, bool> Filter { get; set; }
+		// Construct the full name of the property, taking into account overriden property names and the chain (if we're in a nested validator)
+		string propertyName = context.PropertyChain.BuildPropertyPath(PropertyName ?? displayName);
 
-		/// <summary>
-		/// Constructs the indexer in the property name associated with the error message.
-		/// By default this is "[" + index + "]"
-		/// </summary>
-		public Func<object, IEnumerable<TProperty>, TProperty, int, string> IndexBuilder { get; set; }
-
-		/// <summary>
-		/// Creates a new property rule from a lambda expression.
-		/// </summary>
-		public static CollectionPropertyRule<TProperty> Create<T>(Expression<Func<T, IEnumerable<TProperty>>> expression, Func<CascadeMode> cascadeModeThunk) {
-			var member = expression.GetMember();
-			var compiled = expression.Compile();
-
-			return new CollectionPropertyRule<TProperty>(member, compiled.CoerceToNonGeneric(), expression, cascadeModeThunk, typeof(TProperty), typeof(T));
+		if (string.IsNullOrEmpty(propertyName)) {
+			propertyName = InferPropertyName(Expression);
 		}
 
-		/// <summary>
-		/// Invokes the validator asynchronously
-		/// </summary>
-		/// <param name="context"></param>
-		/// <param name="validator"></param>
-		/// <param name="propertyName"></param>
-		/// <param name="cancellation"></param>
-		/// <returns></returns>
-		protected override async Task<IEnumerable<ValidationFailure>> InvokePropertyValidatorAsync(ValidationContext context, IPropertyValidator validator, string propertyName, CancellationToken cancellation) {
+		// Ensure that this rule is allowed to run.
+		// The validatselector has the opportunity to veto this before any of the validators execute.
+		if (!context.Selector.CanExecute(this, propertyName, context)) {
+			return;
+		}
+
+		if (Condition != null) {
+			if (!Condition(context)) {
+				return;
+			}
+		}
+
+		if (AsyncCondition != null) {
+			if (!await AsyncCondition(context, cancellation)) {
+				return;
+			}
+#if SYNC_ONLY
+			// Throw when inside the synchronous version of this method generated by Zomp.SyncMethodGenerator.
+			throw new AsyncValidatorInvokedSynchronouslyException();
+#endif
+		}
+
+		var filteredValidators = await GetValidatorsToExecuteAsync(context, cancellation);
+
+		if (filteredValidators.Count == 0) {
+			// If there are no property validators to execute after running the conditions, bail out.
+			return;
+		}
+
+		var cascade = CascadeMode;
+		IEnumerable<TElement> collection;
+
+		try {
+			collection = PropertyFunc(context.InstanceToValidate);
+		}
+		catch (NullReferenceException nre) {
+			throw new NullReferenceException($"NullReferenceException occurred when executing rule for {Expression}. If this property can be null you should add a null check using a When condition", nre);
+		}
+
+		int count = 0;
+		int totalFailures = context.Failures.Count;
+
+		if (collection != null) {
 			if (string.IsNullOrEmpty(propertyName)) {
-				propertyName = InferPropertyName(Expression);
+				throw new InvalidOperationException("Could not automatically determine the property name ");
 			}
 
-			var propertyContext = new PropertyValidatorContext(context, this, propertyName);
-			var collectionPropertyValue = propertyContext.PropertyValue as IEnumerable<TProperty>;
+			foreach (var element in collection) {
+				int index = count++;
 
-			if (collectionPropertyValue != null) {
-				if (string.IsNullOrEmpty(propertyName)) {
-					throw new InvalidOperationException("Could not automatically determine the property name ");
+				if (Filter != null && !Filter(element)) {
+					continue;
 				}
 
-				var validatorTasks = collectionPropertyValue.Select(async (v, count) => {
-					if (Filter != null && !Filter(v)) {
-						return Enumerable.Empty<ValidationFailure>();
-					}
-
-					string indexer = count.ToString();
-					bool useDefaultIndexFormat = true;
-
-					if (IndexBuilder != null) {
-						indexer = IndexBuilder(context.InstanceToValidate, collectionPropertyValue, v, count);
-						useDefaultIndexFormat = false;
-					}
-
-					var newContext = context.CloneForChildCollectionValidator(context.InstanceToValidate, preserveParentContext: true);
-					newContext.PropertyChain.Add(propertyName);
-					newContext.PropertyChain.AddIndexer(indexer, useDefaultIndexFormat);
-
-					var newPropertyContext = new PropertyValidatorContext(newContext, this, newContext.PropertyChain.ToString(), v);
-
-					return await validator.ValidateAsync(newPropertyContext, cancellation);
-				});
-
-				var results = new List<ValidationFailure>();
-
-				foreach (var task in validatorTasks) {
-					var failures = await task;
-					results.AddRange(failures);
-				}
-
-				return results;
-			}
-
-			return Enumerable.Empty<ValidationFailure>();
-		}
-
-		private string InferPropertyName(LambdaExpression expression) {
-			var paramExp = expression.Body as ParameterExpression;
-
-			if (paramExp == null) {
-				throw new InvalidOperationException("Could not infer property name for expression: " + expression + ". Please explicitly specify a property name by calling OverridePropertyName as part of the rule chain. Eg: RuleForEach(x => x).NotNull().OverridePropertyName(\"MyProperty\")");
-			}
-
-			return paramExp.Name;
-		}
-
-		/// <summary>
-		/// Invokes the validator
-		/// </summary>
-		/// <param name="context"></param>
-		/// <param name="validator"></param>
-		/// <param name="propertyName"></param>
-		/// <returns></returns>
-		protected override IEnumerable<Results.ValidationFailure> InvokePropertyValidator(ValidationContext context, Validators.IPropertyValidator validator, string propertyName) {
-			if (string.IsNullOrEmpty(propertyName)) {
-				propertyName = InferPropertyName(Expression);
-			}
-
-			var propertyContext = new PropertyValidatorContext(context, this, propertyName);
-			var results = new List<ValidationFailure>();
-			var collectionPropertyValue = propertyContext.PropertyValue as IEnumerable<TProperty>;
-
-			int count = 0;
-
-			if (collectionPropertyValue != null) {
-				if (string.IsNullOrEmpty(propertyName)) {
-					throw new InvalidOperationException("Could not automatically determine the property name ");
-				}
-
-				foreach (var element in collectionPropertyValue) {
-					int index = count++;
-
-					if (Filter != null && !Filter(element)) {
+				if (AsyncFilter != null) {
+					if (!await AsyncFilter(element)) {
 						continue;
 					}
+#if SYNC_ONLY
+					// Throw when inside the synchronous version of this method generated by Zomp.SyncMethodGenerator.
+					throw new AsyncValidatorInvokedSynchronouslyException();
+#endif
+				}
 
-					string indexer = index.ToString();
-					bool useDefaultIndexFormat = true;
+				string indexer = index.ToString();
+				bool useDefaultIndexFormat = true;
 
-					if (IndexBuilder != null) {
-						indexer = IndexBuilder(context.InstanceToValidate, collectionPropertyValue, element, index);
-						useDefaultIndexFormat = false;
+				if (IndexBuilder != null) {
+					indexer = IndexBuilder(context.InstanceToValidate, collection, element, index);
+					useDefaultIndexFormat = false;
+				}
+
+				context.PrepareForChildCollectionValidator();
+				context.PropertyChain.Add(propertyName);
+				context.PropertyChain.AddIndexer(indexer, useDefaultIndexFormat);
+
+				var valueToValidate = element;
+				var propertyPath = context.PropertyChain.ToString();
+				var totalFailuresInner = context.Failures.Count;
+				context.InitializeForPropertyValidator(propertyPath, _displayNameFunc, PropertyName);
+
+				foreach (var component in filteredValidators) {
+					context.MessageFormatter.Reset();
+					context.MessageFormatter.AppendArgument("CollectionIndex", index);
+
+					bool valid = await component.ValidateAsync(context, valueToValidate, cancellation);
+
+					if (!valid) {
+						PrepareMessageFormatterForValidationError(context, valueToValidate);
+						var failure = CreateValidationError(context, valueToValidate, component);
+						context.Failures.Add(failure);
 					}
 
-					var newContext = context.CloneForChildCollectionValidator(context.InstanceToValidate, preserveParentContext: true);
-					newContext.PropertyChain.Add(propertyName);
-					newContext.PropertyChain.AddIndexer(indexer, useDefaultIndexFormat);
+					// If there has been at least one failure, and our CascadeMode has been set to Stop
+					// then don't continue to the next rule
+					if (context.Failures.Count > totalFailuresInner && cascade == CascadeMode.Stop) {
+						context.RestoreState();
+						goto AfterValidate; // 🙃
+					}
+				}
 
-					var newPropertyContext = new PropertyValidatorContext(newContext, this, newContext.PropertyChain.ToString(), element);
-					newPropertyContext.MessageFormatter.AppendArgument("CollectionIndex", index);
-					results.AddRange(validator.Validate(newPropertyContext));
+				context.RestoreState();
+			}
+		}
+
+		AfterValidate:
+
+		if (context.Failures.Count <= totalFailures && DependentRules != null) {
+			foreach (var dependentRule in DependentRules) {
+				cancellation.ThrowIfCancellationRequested();
+				await dependentRule.ValidateAsync(context, cancellation);
+			}
+		}
+	}
+
+	void IValidationRuleInternal<T>.AddDependentRules(IEnumerable<IValidationRuleInternal<T>> rules) {
+		if (DependentRules == null) DependentRules = new();
+		DependentRules.AddRange(rules);
+	}
+
+	[Zomp.SyncMethodGenerator.CreateSyncVersion(OmitNullableDirective = true)]
+	private async ValueTask<List<RuleComponent<T, TElement>>> GetValidatorsToExecuteAsync(ValidationContext<T> context, CancellationToken cancellation) {
+		// Loop over each validator and check if its condition allows it to run.
+		// This needs to be done prior to the main loop as within a collection rule
+		// validators' conditions still act upon the root object, not upon the collection property.
+		// This allows the property validators to cancel their execution prior to the collection
+		// being retrieved (thereby possibly avoiding NullReferenceExceptions).
+		// Must call ToList so we don't modify the original collection mid-loop.
+		var validators = Components.ToList();
+
+		foreach (var component in Components) {
+			if (component.HasCondition) {
+				if (!component.InvokeCondition(context)) {
+					validators.Remove(component);
 				}
 			}
 
-			return results;
+			if (component.HasAsyncCondition) {
+				if (!await component.InvokeAsyncCondition(context, cancellation)) {
+					validators.Remove(component);
+				}
+#if SYNC_ONLY
+				// Throw when inside the synchronous version of this method generated by Zomp.SyncMethodGenerator.
+				throw new AsyncValidatorInvokedSynchronouslyException();
+#endif
+			}
 		}
+
+		return validators;
+	}
+
+	private static string InferPropertyName(LambdaExpression expression) {
+		var paramExp = expression.Body as ParameterExpression;
+
+		if (paramExp == null) {
+			throw new InvalidOperationException("Could not infer property name for expression: " + expression + ". Please explicitly specify a property name by calling OverridePropertyName as part of the rule chain. Eg: RuleForEach(x => x).NotNull().OverridePropertyName(\"MyProperty\")");
+		}
+
+		return paramExp.Name;
 	}
 }
